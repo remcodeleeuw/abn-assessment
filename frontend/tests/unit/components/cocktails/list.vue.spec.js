@@ -18,7 +18,7 @@ describe('CocktailList.vue', () => {
   });
 
   it('should render loading state initially', () => {
-    global.fetch.mockImplementationOnce(() => new Promise(() => {}));
+    global.fetch.mockImplementationOnce(() => new Promise(() => { }));
 
     const wrapper = shallowMount(CocktailList, {
       global: { stubs: { RouterLink: { template: '<a><slot/></a>' } } }
@@ -59,7 +59,6 @@ describe('CocktailList.vue', () => {
     });
     await flushPromises();
 
-    // Setup mock for search request
     global.fetch.mockResolvedValueOnce({
       ok: true,
       json: async () => [mockCocktails[0]]
@@ -68,18 +67,14 @@ describe('CocktailList.vue', () => {
     const input = wrapper.find('#search');
     await input.setValue('Mojito');
 
-    // Debounce timer hasn't run yet, so fetch shouldn't have been called for search
     expect(global.fetch).toHaveBeenCalledTimes(1);
 
-    // Fast-forward debounce timer
     jest.advanceTimersByTime(305);
     await flushPromises();
 
-    // Fetch should be called with search parameter
     expect(global.fetch).toHaveBeenCalledTimes(2);
     expect(global.fetch).toHaveBeenLastCalledWith('http://localhost:3000/cocktails?search=Mojito');
 
-    // Check list updates to only show Mojito
     const items = wrapper.findAll('li');
     expect(items.length).toBe(1);
     expect(items[0].text()).toContain('Mojito');
