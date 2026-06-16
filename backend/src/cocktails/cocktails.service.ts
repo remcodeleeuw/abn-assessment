@@ -44,8 +44,18 @@ export class CocktailsService implements OnModuleInit {
     return cocktail;
   }
 
-  create(cocktail: Cocktails) {
-    return this.usersRepository.insert(cocktail);
+  async create(cocktail: Cocktails) {
+    const result = await this.usersRepository.insert(cocktail);
+    const insertedId = result.identifiers[0]?.id;
+    if (insertedId) {
+      const newCocktail = { ...cocktail, id: insertedId };
+      try {
+        await this.elasticSearch.indexCocktail(newCocktail);
+      } catch (esError) {
+        console.warn(`Failed to index new cocktail in Elasticsearch: ${esError.message}`);
+      }
+    }
+    return result;
   }
 
   async search(query: string): Promise<Cocktails[]> {

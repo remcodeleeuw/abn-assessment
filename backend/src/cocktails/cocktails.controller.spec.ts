@@ -19,6 +19,7 @@ describe('CocktailsController Test Suite', () => {
     findAll: jest.fn().mockResolvedValue([mockCocktail]),
     findOne: jest.fn().mockResolvedValue(mockCocktail),
     search: jest.fn().mockResolvedValue([mockCocktail]),
+    create: jest.fn().mockResolvedValue({ identifiers: [{ id: 1 }] }),
   };
 
   beforeEach(async () => {
@@ -79,6 +80,35 @@ describe('CocktailsController Test Suite', () => {
     findOneSpy.mockRejectedValue(new NotFoundException(`Cocktail with id ${cocktailId} not found`));
 
     await expect(controller.findOne(cocktailId)).rejects.toThrow(NotFoundException);
+  });
+
+  describe('newCocktail', () => {
+    it('should create a cocktail successfully', async () => {
+      const createSpy = jest.spyOn(service, 'create').mockResolvedValue({ identifiers: [{ id: 2 }] } as any);
+      
+      const result = await controller.newCocktail({
+        title: 'New Drink',
+        description: 'Nice drink',
+        price: 8,
+      } as Cocktails);
+
+      expect(createSpy).toHaveBeenCalledWith({
+        title: 'New Drink',
+        description: 'Nice drink',
+        price: 8,
+      });
+      expect(result).toBe(true);
+    });
+
+    it('should throw ConflictException if cocktail title already exists', async () => {
+      jest.spyOn(service, 'create').mockRejectedValue(new ConflictException('Cocktail with title "Mojito" already exists'));
+
+      await expect(controller.newCocktail({
+        title: 'Mojito',
+        description: 'duplicate',
+        price: 9,
+      } as Cocktails)).rejects.toThrow(ConflictException);
+    });
   });
 
 });

@@ -1,6 +1,7 @@
 <template>
   <div>
     <form @submit.prevent="submitForm">
+      <div v-if="error" class="alert alert-error">{{ error }}</div>
       <div>
         <label for="title">Title:</label>
         <input type="text" v-model="form.title" id="title" required>
@@ -27,11 +28,13 @@ export default {
         title: '',
         price: '',
         description: ''
-      }
+      },
+      error: null
     };
   },
   methods: {
     async submitForm() {
+      this.error = null;
       try {
         const response = await fetch('http://localhost:3000/cocktails', {
           method: 'POST',
@@ -42,7 +45,11 @@ export default {
         });
 
         if (!response.ok) {
-          throw new Error('Network response was not ok');
+          const errData = await response.json().catch(() => ({}));
+          const errMsg = typeof errData.message === 'string' 
+            ? errData.message 
+            : (Array.isArray(errData.message) ? errData.message.join(', ') : 'Network response was not ok');
+          throw new Error(errMsg);
         }
 
         const data = await response.json();
@@ -53,7 +60,7 @@ export default {
         this.form.description = '';
       } catch (error) {
         console.error('There was an error submitting the form:', error);
-        // Handle the error (e.g., show an error message)
+        this.error = error.message;
       }
     }
   }
@@ -87,5 +94,17 @@ button {
 }
 button:hover {
   background-color: #0056b3;
+}
+.alert {
+  padding: 10px;
+  margin-bottom: 15px;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.alert-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
 }
 </style>
