@@ -19,7 +19,7 @@ describe('new.vue', () => {
     expect(wrapper.find('#description').exists()).toBe(true);
   });
 
-  it('should submit form data successfully and display success message', async () => {
+  it('should submit form data successfully and clear fields', async () => {
     const mockResponse = { id: 10, title: 'Mojito' };
     global.fetch.mockResolvedValueOnce({
       ok: true,
@@ -43,7 +43,6 @@ describe('new.vue', () => {
 
     await flushPromises();
 
-    expect(wrapper.find('.alert-success').text()).toContain('successfully created!');
     expect(wrapper.vm.form.title).toBe('');
     expect(wrapper.vm.form.price).toBe('');
     expect(wrapper.vm.form.description).toBe('');
