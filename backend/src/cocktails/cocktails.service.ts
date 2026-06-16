@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Cocktails } from './cocktails.entity';
@@ -8,14 +8,20 @@ export class CocktailsService {
   constructor(
     @InjectRepository(Cocktails)
     private usersRepository: Repository<Cocktails>,
-  ) {}
+  ) { }
 
   findAll(): Promise<Cocktails[]> {
     return this.usersRepository.find();
   }
 
-  findOne(id: number): Promise<Cocktails | null> {
-    return this.usersRepository.findOneBy({ id });
+  async findOne(id: number): Promise<Cocktails> {
+    const cocktail = await this.usersRepository.findOneBy({ id });
+
+    if (!cocktail) {
+      throw new NotFoundException(`Cocktail with id ${id} not found`);
+    }
+
+    return cocktail;
   }
 
   create(cocktail: Cocktails) {

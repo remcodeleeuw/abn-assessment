@@ -2,7 +2,7 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import CocktailList from '@/components/cocktails/list.vue';
 import CocktailNew from '@/components/cocktails/new.vue';
-
+import CocktailDetail from '@/components/cocktails/detail.vue';
 const routes = [
   {
     path: '/',
@@ -14,6 +14,12 @@ const routes = [
     name: 'CocktailNew',
     component: CocktailNew,
   },
+  {
+    path: '/:id',
+    name: 'CocktailDetail',
+    component: CocktailDetail,
+    props: true
+  }
 ];
 
 const router = createRouter({
