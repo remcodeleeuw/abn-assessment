@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Query, BadRequestException } from '@nestjs/common';
 import { Cocktails } from './cocktails.entity';
 import { CocktailsService } from './cocktails.service';
 
@@ -7,7 +7,14 @@ export class CocktailsController {
   constructor(private readonly cocktailsService: CocktailsService) {}
 
   @Get()
-  searchCocktails() : Promise<Cocktails[]> {
+  searchCocktails(@Query('search') search?: string) : Promise<Cocktails[]> {
+    if (search !== undefined) {
+      const trimmed = search.trim();
+      if (trimmed === '') {
+        throw new BadRequestException('Search query cannot be empty');
+      }
+      return this.cocktailsService.search(trimmed);
+    }
     return this.cocktailsService.findAll();
   }
 

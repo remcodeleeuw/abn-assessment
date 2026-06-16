@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { CocktailsController } from './cocktails.controller';
 import { CocktailsService } from './cocktails.service';
 import { Cocktails } from './cocktails.entity';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, BadRequestException, ConflictException } from '@nestjs/common';
 
 describe('CocktailsController Test Suite', () => {
   let controller: CocktailsController;
@@ -16,7 +16,9 @@ describe('CocktailsController Test Suite', () => {
   };
 
   const mockCocktailsService = {
+    findAll: jest.fn().mockResolvedValue([mockCocktail]),
     findOne: jest.fn().mockResolvedValue(mockCocktail),
+    search: jest.fn().mockResolvedValue([mockCocktail]),
   };
 
   beforeEach(async () => {
@@ -36,6 +38,26 @@ describe('CocktailsController Test Suite', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('searchCocktails', () => {
+    it('should return all cocktails when no search query is provided', async () => {
+      const result = await controller.searchCocktails();
+      expect(result).toEqual([mockCocktail]);
+      expect(service.findAll).toHaveBeenCalled();
+    });
+
+    it('should return filtered cocktails when search query is provided', async () => {
+      const query = 'mint';
+      const result = await controller.searchCocktails(query);
+      expect(result).toEqual([mockCocktail]);
+      expect(service.search).toHaveBeenCalledWith(query);
+    });
+
+    it('should throw BadRequestException when search query is empty or whitespace', async () => {
+      expect(() => controller.searchCocktails('')).toThrow(BadRequestException);
+      expect(() => controller.searchCocktails('   ')).toThrow(BadRequestException);
+    });
   });
 
   describe('findOne', () => {
@@ -58,4 +80,5 @@ describe('CocktailsController Test Suite', () => {
 
     await expect(controller.findOne(cocktailId)).rejects.toThrow(NotFoundException);
   });
+
 });
