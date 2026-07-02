@@ -8,6 +8,7 @@
   "scripts": {
     "start": "nest start --watch",
     "test": "jest",
+    "test:integration": "jest --config jest-integration.json",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage"
   },
@@ -18,7 +19,7 @@
       "ts"
     ],
     "rootDir": "src",
-    "testRegex": ".*\\.spec\\.ts$",
+    "testRegex": ".*(?<!integration)\\.spec\\.ts$",
     "transform": {
       "^.+\\.(t|j)s$": "ts-jest"
     },
