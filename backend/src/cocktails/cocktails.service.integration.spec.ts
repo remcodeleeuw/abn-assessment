@@ -1,27 +1,47 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
+import { PostgreSqlContainer, StartedPostgreSqlContainer } from '@testcontainers/postgresql';
+import { GenericContainer, StartedTestContainer, Wait } from 'testcontainers';
 import { CocktailsService } from './cocktails.service';
 import { Cocktails } from './cocktails.entity';
 import { SearchModule } from '../search.module';
 import { ElasticSearch } from '../elasticsearch.service';
 
-process.env.DATABASE_URL = process.env.DATABASE_URL || 'postgres://user:password@localhost:5432/mydatabase';
-process.env.ELASTICSEARCH_HOST = process.env.ELASTICSEARCH_HOST || 'http://localhost:9200';
+jest.setTimeout(60000);
 
-describe('CocktailsService Integration', () => {
+describe('CocktailsService Integration (Fully Isolated with Testcontainers)', () => {
   let service: CocktailsService;
   let dataSource: DataSource;
   let elasticSearch: ElasticSearch;
+  let pgContainer: StartedPostgreSqlContainer;
+  let esContainer: StartedTestContainer;
 
   beforeAll(async () => {
+    pgContainer = await new PostgreSqlContainer('postgres:13').start();
+    const dbUrl = pgContainer.getConnectionUri();
+
+    esContainer = await new GenericContainer('docker.elastic.co/elasticsearch/elasticsearch:8.6.0')
+      .withExposedPorts(9200)
+      .withEnvironment({
+        'discovery.type': 'single-node',
+        'ES_JAVA_OPTS': '-Xms512m -Xmx512m',
+        'xpack.security.enabled': 'false',
+        'xpack.security.http.ssl.enabled': 'false',
+      })
+      .withWaitStrategy(Wait.forHttp('/_cluster/health', 9200).forStatusCode(200))
+      .start();
+
+    const esHost = `http://${esContainer.getHost()}:${esContainer.getMappedPort(9200)}`;
+    process.env.ELASTICSEARCH_HOST = esHost;
+
     const module: TestingModule = await Test.createTestingModule({
       imports: [
         TypeOrmModule.forRoot({
           type: 'postgres',
-          url: process.env.DATABASE_URL,
+          url: dbUrl,
           entities: [Cocktails],
-          synchronize: false,
+          synchronize: true,
         }),
         TypeOrmModule.forFeature([Cocktails]),
         SearchModule,
@@ -52,7 +72,15 @@ describe('CocktailsService Integration', () => {
   });
 
   afterAll(async () => {
-    await dataSource.destroy();
+    if (dataSource) {
+      await dataSource.destroy();
+    }
+    if (pgContainer) {
+      await pgContainer.stop();
+    }
+    if (esContainer) {
+      await esContainer.stop();
+    }
   });
 
   it('should save a cocktail in database and index it in Elasticsearch', async () => {
